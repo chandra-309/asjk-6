@@ -1,207 +1,105 @@
-<?php 
-require 'function.php';
+<?php
+session_start();
+include 'koneksi.php'; // Menghubungkan ke database
 
-// Set durasi timeout (dalam detik)
-$timeoutDuration = 60; // 1 menit
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $username = mysqli_real_escape_string($conn, $_POST['username']);
+    $passpeg  = mysqli_real_escape_string($conn, $_POST['passpeg']);
 
-// Periksa apakah sesi sudah dimulai sebelum memanggil session_start()
-if (session_status() == PHP_SESSION_NONE) {
-    session_start();
-}
+    // Query untuk cek username dan passpeg
+    $query = "SELECT * FROM pegawai WHERE username = '$username' AND passpeg = '$passpeg'";
+    $result = mysqli_query($conn, $query);
 
-// Cek apakah pengguna sudah login
-if (isset($_SESSION['login'])) {
-    // sudah login, cek apakah sesi masih aktif
-    if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > $timeoutDuration) {
-        // Jika sudah melewati batas waktu, logout
-        session_unset(); // Menghapus semua sesi
-        session_destroy(); // Menghancurkan sesi
-        header('location:login.php'); // Arahkan ke halaman login
-        exit();
-    }
-    // Jika masih aktif, perbarui waktu terakhir aktivitas
-    $_SESSION['last_activity'] = time();
-}
-
-// Proses login
-if (isset($_POST['login'])) {
-    $username = $_POST['username'];
-    $password = $_POST['password'];
-
-    // Tambahkan logika autentikasi di sini
-    if ($username === 'admin' && $password === 'admin') {
-        $_SESSION['login'] = true;
-        $_SESSION['last_activity'] = time(); // Set waktu aktivitas terakhir
-        header('location:index.php');
+    if (mysqli_num_rows($result) > 0) {
+        $user = mysqli_fetch_assoc($result);
+        $_SESSION['username'] = $user['username']; // Simpan username ke session
+        header("Location: dashboard.html"); // Arahkan ke dashboard
         exit();
     } else {
-        $error = 'Username atau Password salah';
+        $error = "Username atau password salah!";
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <meta name="description" content="" />
-    <meta name="author" content="" />
-    <title>Login</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="css/styles.css" rel="stylesheet" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Pegawai</title>
     <style>
-        /* CSS Tambahan untuk mempercantik halaman login */
-        body.bg-dark {
-            background-color: #f0f2f5 !important;
-            color: #343a40;
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
 
-        .card {
+        .login-container {
             background-color: #ffffff;
-            border: 0;
-            border-radius: 1rem;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            width: 300px;
         }
 
-        .card-header {
-            background-color: #007bff;
-            color: #ffffff;
+        .login-container h2 {
             text-align: center;
-            padding: 1rem;
-            border-bottom: 0;
-            border-radius: 1rem 1rem 0 0;
+            color: #333;
+            margin-bottom: 20px;
         }
 
-        .form-floating>.form-control, .form-floating>.form-select {
-            padding: 1rem 1.5rem;
-            border-radius: 0.25rem;
-            border: 1px solid #ced4da;
+        .login-container label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
         }
 
-        .form-floating>label {
-            padding: 0.75rem 1.5rem;
-            pointer-events: none;
-            font-size: 1rem;
-            color: #6c757d;
+        .login-container input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
         }
 
-        .btn-primary {
-            background-color: #007bff;
-            border-color: #007bff;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.25rem;
-            transition: background-color 0.3s, border-color 0.3s;
-        }
-
-        .btn-primary:hover {
-            background-color: #0056b3;
-            border-color: #0056b3;
-        }
-
-        .mt-5 {
-            margin-top: 3rem !important;
-        }
-
-        .mb-3 {
-            margin-bottom: 1rem !important;
-        }
-
-        .mt-4 {
-            margin-top: 1.5rem !important;
-        }
-
-        .mb-0 {
-            margin-bottom: 0 !important;
-        }
-
-        .text-center a {
-            color: #007bff;
-        }
-
-        .text-center a:hover {
-            color: #0056b3;
-            text-decoration: underline;
-        }
-
-        .alert-danger {
-            color: #721c24;
-            background-color: #f8d7da;
-            border-color: #f5c6cb;
-            padding: 1rem;
-            border-radius: 0.25rem;
-            margin-bottom: 1rem;
-            text-align: center;
-        }
-
-        .welcome-text {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        .welcome-text h1 {
-            color: #007bff;
+        .login-container button {
+            width: 100%;
+            padding: 10px;
+            background-color: #6b4f4f;
+            border: none;
+            color: #fff;
             font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
         }
 
-        .welcome-text p {
-            color: #6c757d;
-            font-size: 1.1rem;
+        .login-container button:hover {
+            background-color: #8d6e63;
         }
 
-        .container {
-            margin-top: 5rem;
+        .login-container p.error {
+            color: red;
+            text-align: center;
         }
     </style>
 </head>
-<body class="bg-dark">
-    <div id="layoutAuthentication">
-        <div id="layoutAuthentication_content">
-            <main>
-                <div class="container">
-                    <div class="row justify-content-center">
-                        <div class="col-lg-5">
-                            <div class="card shadow-lg border-0 rounded-lg mt-5">
-                                <div class="card-header"><h3 class="text-center font-weight-light my-4">Login</h3></div>
-                                <div class="card-body">
-                                    <div class="welcome-text">
-                                        <h1>Welcome Back!</h1>
-                                        <p>Senang bertemu dengan Anda kembali di Kasir AILGA.NET</p>
-                                    </div>
-                                    <?php if (isset($error)): ?>
-                                        <div class="alert alert-danger" role="alert">
-                                            <?php echo $error; ?>
-                                        </div>
-                                    <?php endif; ?>
-                                    <form method="post">
-                                        <div class="form-floating mb-3">
-                                            <input class="form-control" id="inputUsername" name="username" type="text" placeholder="Masukkan Username" required />
-                                            <label for="inputUsername">Username</label>
-                                        </div>
-                                        <div class="form-floating mb-3">
-                                            <input class="form-control" id="inputPassword" name="password" type="password" placeholder="Masukkan Password" required />
-                                            <label for="inputPassword">Password</label>
-                                        </div>
-                                        <div class="d-flex align-items-center justify-content-between mt-4 mb-0">
-                                            <button type="submit" name="login" class="btn btn-primary">Login</button>
-                                        </div>
-                                    </form>
-                                </div>
-                                <div class="card-footer text-center">
-                                    <div class="small"><a href="#">Lupa Password?</a></div>
-                                    <div class="small mt-2"><a href="#">Daftar Akun Baru</a></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </main>
-        </div>
+<body>
+    <div class="login-container">
+        <h2>Kernel Coffee</h2>
+        <form method="POST" action="">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+
+            <label for="passpeg">Password:</label>
+            <input type="password" id="passpeg" name="passpeg" required>
+
+            <button type="submit">Login</button>
+        </form>
+        <?php if (isset($error)) { echo "<p class='error'>$error</p>"; } ?>
     </div>
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" crossorigin="anonymous"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" crossorigin="anonymous"></script>
-    <script src="js/scripts.js"></script>
 </body>
 </html>
